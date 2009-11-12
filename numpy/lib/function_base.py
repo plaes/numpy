@@ -4,7 +4,8 @@ __all__ = ['select', 'piecewise', 'trim_zeros',
            'diff', 'gradient', 'angle', 'unwrap', 'sort_complex', 'disp',
            'extract', 'place', 'nansum', 'nanmax', 'nanargmax',
            'nanargmin', 'nanmin', 'vectorize', 'asarray_chkfinite', 'average',
-           'histogram', 'histogramdd', 'bincount', 'digitize', 'cov',
+           'histogram', 'histogram_discrete', 'histogramdd', 'bincount',
+           'digitize', 'cov',
            'corrcoef', 'msort', 'median', 'sinc', 'hamming', 'hanning',
            'bartlett', 'blackman', 'kaiser', 'trapz', 'i0', 'add_newdoc',
            'add_docstring', 'meshgrid', 'delete', 'insert', 'append',
@@ -27,6 +28,7 @@ from numpy.core import atleast_1d, atleast_2d
 from numpy.lib.twodim_base import diag
 from _compiled_base import _insert, add_docstring
 from _compiled_base import digitize, bincount, interp as compiled_interp
+from _compiled_base import histogram_discrete
 from arraysetops import setdiff1d
 from utils import deprecate
 import numpy as np

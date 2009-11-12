@@ -85,6 +85,85 @@ mnx (intp *i , intp len)
     return mn;
 }
 
+/*
+ * arr_histogram_discrete is registered as histogram_discrete.
+ *
+ * input data
+ * range (optional) - TODO
+ * weights = (optional)
+ */
+static PyObject *
+arr_histogram_discrete(PyObject *NPY_UNUSED(self), PyObject *args, PyObject *kwds)
+{
+    PyArray_Descr *type;
+    PyObject *list = NULL, *weight=Py_None;
+    PyObject *lst=NULL, *ans=NULL, *wts=NULL;
+    PyObject *bin=NULL;
+    intp *numbers, *ians, *bins, len , mxi, mni, ans_size;
+    int i, min;
+    double *weights , *dans;
+    static char *kwlist[] = {"list", "weights", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O",
+                kwlist, &list, &weight)) {
+            goto fail;
+    }
+    if (!(lst = PyArray_ContiguousFromAny(list, PyArray_INTP, 1, 1))) {
+            goto fail;
+    }
+    len = PyArray_SIZE(lst);
+    numbers = (intp *) PyArray_DATA(lst);
+    mxi = mxx(numbers, len);
+    mni = mnx(numbers, len);
+    min = numbers[mni];
+    ans_size = numbers [mxi] + 1 - min;
+    type = PyArray_DescrFromType(PyArray_INTP);
+
+    /* Create an output array for all the discrete numbers in range */
+    if (!(bin = PyArray_Zeros(1, &ans_size, type, 0)))
+        goto fail;
+    bins = (intp *)(PyArray_DATA(bin));
+    for (i = 0; i < ans_size; i++)
+        bins[i] = i + min;
+
+    /* Count occurrences to create histogram data */
+    if (weight == Py_None) {
+        if (!(ans = PyArray_Zeros(1, &ans_size, type, 0)))
+            goto fail;
+        ians = (intp *)(PyArray_DATA(ans));
+        for (i = 0; i < len; i++)
+            ians [numbers[i] - min] += 1;
+    }
+    else {
+        if (!(wts = PyArray_ContiguousFromAny(weight, PyArray_DOUBLE, 1, 1))) {
+            goto fail;
+        }
+        weights = (double *)PyArray_DATA (wts);
+        if (PyArray_SIZE(wts) != len) {
+            PyErr_SetString(PyExc_ValueError,
+                    "The weights and list do not have the same length.");
+            goto fail;
+        }
+        type = PyArray_DescrFromType(PyArray_DOUBLE);
+        if (!(ans = PyArray_Zeros(1, &ans_size, type, 0)))
+            goto fail;
+        dans = (double *)PyArray_DATA (ans);
+        for (i = 0; i < len; i++)
+            dans[numbers[i] - min] += weights[i];
+        Py_DECREF(wts);
+    }
+    Py_DECREF(lst);
+
+    /* Return value as [hist, bins] */
+    return Py_BuildValue("[OO]", ans, bin);
+
+fail:
+    Py_XDECREF(lst);
+    Py_XDECREF(wts);
+    Py_XDECREF(bin);
+    Py_XDECREF(ans);
+    return NULL;
+}
 
 /*
  * arr_bincount is registered as bincount.
@@ -888,6 +967,8 @@ static struct PyMethodDef methods[] = {
     {"packbits", (PyCFunction)io_pack,
         METH_VARARGS | METH_KEYWORDS, NULL},
     {"unpackbits", (PyCFunction)io_unpack,
+        METH_VARARGS | METH_KEYWORDS, NULL},
+    {"histogram_discrete", (PyCFunction)arr_histogram_discrete,
         METH_VARARGS | METH_KEYWORDS, NULL},
     {NULL, NULL, 0, NULL}    /* sentinel */
 };
